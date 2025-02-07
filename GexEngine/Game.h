@@ -9,6 +9,7 @@
 #include <SFML/Graphics.hpp>
 #include "EntityManager.h"
 #include "Entity.h"
+#include "Scene.h"
 
 
 struct PlayerConfig {
@@ -39,6 +40,8 @@ private:
     sf::Text                    statisticsText;
     sf::Time                    statisticsUpdateTime{sf::Time::Zero};
     unsigned int                statisticsNumFrames{0};
+
+    Scene scene;
 
     // systems
     void                        sMovement(sf::Time dt);

@@ -1,6 +1,6 @@
 # Game Config
 
-Window  1024 720
+Window  1280 768
 Font ../assets/arial.ttf
 
 #       R    S      F(r,g,b),     O(r,g,b),   OT,  verticies

@@ -8,6 +8,7 @@
 #include <iostream>
 
 
+
 const sf::Time Game::TIME_PER_FRAME = sf::seconds((1.f / 60.f));
 
 void Game::run() {
@@ -55,42 +56,40 @@ void Game::sMovement(sf::Time dt) {
 
 
 void Game::sRender() {
-    window.clear(sf::Color(100, 100, 255));
+    window.clear(sf::Color(100, 100, 255));  
+
+    scene.render(window);  
 
     for (auto& e : entityManager.getEntities()) {
-        if (e->hasComponent<CTransform>())
-        {
-			auto & pos = e->getComponent<CTransform>().pos;
-        if (e->hasComponent<CShape>())
-        {
+        if (e->hasComponent<CTransform>()) {
             auto& tfm = e->getComponent<CTransform>();
-            auto shape = e->getComponent<CShape>().shape;
-            shape->setPosition(tfm.pos);
-            window.draw(*shape);
-        }
-        if (e->hasComponent<CName>())
-        {
-	        auto& tfm = e->getComponent<CTransform>();
-            auto name = e->getComponent<CName>().name;
-            name.setPosition(tfm.pos);
-            window.draw(name);
+            if (e->hasComponent<CShape>()) {
+                auto shape = e->getComponent<CShape>().shape;
+                shape->setPosition(tfm.pos);
+                window.draw(*shape);
+            }
+            if (e->hasComponent<CName>()) {
+                auto& name = e->getComponent<CName>().name;
+                name.setPosition(tfm.pos);  
+                window.draw(name);  
+            }
         }
     }
+
     window.draw(statisticsText);
     window.display();
 }
 
 
+
 void Game::sUpdate(sf::Time dt) {
 
-    // update entity manager
     entityManager.update();
 
     if (isPaused)
         return;
 
 
-    // move everything
     sMovement(dt);
     sCollision();
 
@@ -234,7 +233,7 @@ void Game::loadConfigFromFile(const std::string &path) {
 }
 
 
-Game::Game(const std::string &path) {
+Game::Game(const std::string& path) : scene("background.png") {
     init(path);
 }
 

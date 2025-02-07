@@ -11,6 +11,7 @@
 #include "Utilities.h"
 
 
+
 struct Component
 {
     bool		has{ false };
@@ -54,16 +55,19 @@ struct CTransform : public Component
 
 };
 
-struct CName : public Component
-{
-    sf::T
+struct CName : public Component {
+    sf::Text name;
 
     CName() = default;
-    CName(sf::font font, std::string n) {
-		name.setFont(font);
-		nameText.setString(n);
-        centerOrigin(name);
-	}
+
+    CName(const sf::Font& font, const std::string& n) {
+        name.setFont(font);  
+        name.setString(n);   
+        name.setCharacterSize(20);  
+        name.setFillColor(sf::Color::White);  
+        centerOrigin(name);  
+        has = true;  
+    }
 };
 
 

@@ -15,30 +15,21 @@ inline float length(const sf::Vector2f& v)
     return std::sqrtf(v.x * v.x + v.y * v.y);
 }
 
-inline sf::Vector2f normalize(sf::Vector2f v) {
-    static const float epsi = 0.00001;
-    float d = length(v);
-    if (d > epsi)
-        v = v / d;
-    return v;
-}
-
-
 template<typename T>
-inline void centerOrigin(T &t) {
+inline void centerOrigin(T& t) {
     auto bounds = t.getLocalBounds();
     t.setOrigin((bounds.width / 2.f) + bounds.left,
-                (bounds.height / 2.f) + bounds.top);
+        (bounds.height / 2.f) + bounds.top);
 }
-
 
 template<typename T>
-inline void centerOrigin(T *t) {
-    auto bounds = t->getLocalBounds();
-    t->setOrigin((bounds.width / 2.f) + bounds.left,
-                (bounds.height / 2.f) + bounds.top);
+inline void centerOrigin(std::shared_ptr<T> t) {
+    if (t) {
+        auto bounds = t->getLocalBounds();
+        t->setOrigin((bounds.width / 2.f) + bounds.left,
+            (bounds.height / 2.f) + bounds.top);
+    }
 }
-
 
 template <typename T>
 inline std::ostream& operator<<(std::ostream& os, const sf::Vector2<T>& v) {
