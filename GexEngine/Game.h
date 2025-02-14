@@ -21,6 +21,13 @@ struct PlayerConfig {
     int                         nVerticies{3};
 };
 
+enum class GameState {
+    Title,
+    Menu,
+    Background
+};
+
+
 
 class Game {
 private:
@@ -35,6 +42,18 @@ private:
     PlayerConfig                playerConfig;
     bool                        isRunning{true};
     bool                        isPaused{false};
+
+    GameState currentState = GameState::Title;
+
+    sf::Texture titleTexture;
+    sf::Sprite titleSprite;
+    sf::Texture menuTexture;
+    sf::Sprite menuSprite;
+
+    const std::string assetsPath = "../assets/";
+
+    int currentMenuOption = 0;  
+    const int menuOptionCount = 3;
 
     // stats
     sf::Text                    statisticsText;
