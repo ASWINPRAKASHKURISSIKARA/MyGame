@@ -10,6 +10,7 @@
 #include "EntityManager.h"
 #include "Entity.h"
 #include "Scene.h"
+#include <SFML/Audio.hpp>
 
 
 struct PlayerConfig {
@@ -54,6 +55,24 @@ private:
 
     int currentMenuOption = 0;  
     const int menuOptionCount = 3;
+
+    sf::Texture dogTexture;
+    sf::Sprite dogSprite;
+    sf::Vector2f dogPosition{ 640.f, 384.f };  
+    float dogSpeed = 25.f;  
+    int dogAnimationFrame = 0;
+    sf::Clock animationClock;
+
+    sf::Texture carSheetTexture;
+    std::vector<sf::Sprite> cars;
+    std::vector<sf::IntRect> carFrames;  
+    sf::Clock carSpawnClock;
+    float carSpeed = 100.0f;  
+    float spawnInterval = 1.5f;  
+    bool isGameOver = false;  
+
+    sf::Music backgroundMusic;  
+    sf::Music gameOverMusic;
 
     // stats
     sf::Text                    statisticsText;

@@ -1,4 +1,4 @@
-//
+﻿//
 // Created by David Burchill on 2023-09-27.
 //
 
@@ -66,23 +66,41 @@ void Game::sRender() {
 		window.draw(menuSprite);
 
 		sf::RectangleShape highlightRect;
-		highlightRect.setSize(sf::Vector2f(200, 50));
+		highlightRect.setSize(sf::Vector2f(400, 70));
 		highlightRect.setFillColor(sf::Color(255, 255, 255, 100));
 
 		if (currentMenuOption == 0) {
-			highlightRect.setPosition(200, 200);
+			highlightRect.setPosition(200, 400);
 		}
 		else if (currentMenuOption == 1) {
-			highlightRect.setPosition(200, 300);
+			highlightRect.setPosition(200, 500);
 		}
 		else if (currentMenuOption == 2) {
-			highlightRect.setPosition(200, 400);
+			highlightRect.setPosition(200, 600);
 		}
 
 		window.draw(highlightRect);
 	}
 	else if (currentState == GameState::Background) {
 		scene.render(window);
+
+		for (const auto& car : cars) {
+			window.draw(car);
+		}
+
+		window.draw(dogSprite);
+
+		if (isGameOver) {
+			sf::Text gameOverText;
+			gameOverText.setFont(font);
+			gameOverText.setString("GAME OVER! \n Press R to Restart");
+			gameOverText.setCharacterSize(100);
+			gameOverText.setFillColor(sf::Color::Red);
+			gameOverText.setPosition(300, 250);
+			window.draw(gameOverText);
+		}
+
+
 	}
 
 	window.draw(statisticsText);
@@ -90,15 +108,101 @@ void Game::sRender() {
 }
 
 void Game::sUpdate(sf::Time dt) {
-
 	entityManager.update();
 
-	if (isPaused)
+	if (isPaused || currentState != GameState::Background)
 		return;
-
 
 	sMovement(dt);
 	sCollision();
+
+	if (animationClock.getElapsedTime().asSeconds() > 0.1f) {
+		dogAnimationFrame = (dogAnimationFrame + 1) % 3;
+		sf::IntRect textureRect = dogSprite.getTextureRect();
+		textureRect.left = dogAnimationFrame * 32;
+		dogSprite.setTextureRect(textureRect);
+
+		animationClock.restart();
+	}
+
+	dogSprite.setPosition(dogPosition);
+
+	float spawnInterval = 1.5f;
+
+	if (carSpawnClock.getElapsedTime().asSeconds() >= spawnInterval) {
+		sf::Sprite car;
+		car.setTexture(carSheetTexture);
+
+		int carIndex = rand() % 3;
+		car.setTextureRect(carFrames[carIndex]);
+
+		int laneX[] = { 450, 640, 830 };
+		car.setPosition(laneX[rand() % 3], -220);
+
+		car.setScale(0.5f, 0.5f);
+
+		cars.push_back(car);
+		carSpawnClock.restart();
+	}
+
+	for (auto& car : cars) {
+		car.move(0, carSpeed * dt.asSeconds());
+	}
+
+	cars.erase(std::remove_if(cars.begin(), cars.end(),
+		[&](const sf::Sprite& c) { return c.getPosition().y > windowSize.y; }),
+		cars.end());
+
+	for (const auto& car : cars) {
+		float carX = car.getPosition().x;
+		float carY = car.getPosition().y;
+
+		if (carY < 0) continue;
+
+		float dogX = dogSprite.getPosition().x;
+		float dogY = dogSprite.getPosition().y;
+
+		if (std::abs(carX - dogX) > 50)
+			continue;
+
+		sf::FloatRect dogBounds = dogSprite.getGlobalBounds();
+		dogBounds.left += 10;
+		dogBounds.width -= 20;
+		dogBounds.top += 5;
+		dogBounds.height -= 10;
+
+		if (dogBounds.intersects(car.getGlobalBounds())) {
+			isGameOver = true;
+
+			backgroundMusic.stop();
+
+			gameOverMusic.setVolume(100);
+			gameOverMusic.play();
+
+			break;
+		}
+	}
+
+	for (const auto& car : cars) {
+		sf::FloatRect dogBounds = dogSprite.getGlobalBounds();
+		sf::FloatRect carBounds = car.getGlobalBounds();
+
+		dogBounds.left += 10;
+		dogBounds.width -= 20;
+		dogBounds.top += 5;
+		dogBounds.height -= 10;
+
+		float carX = car.getPosition().x;
+		float dogX = dogSprite.getPosition().x;
+
+		if (abs(carX - dogX) > 50)
+			continue;
+
+		if (dogBounds.intersects(carBounds)) {
+			isGameOver = true;
+			break;
+		}
+	}
 
 }
 
@@ -111,6 +215,18 @@ void Game::sUserInput() {
 		}
 
 		if (event.type == sf::Event::KeyPressed) {
+			if (isGameOver && event.key.code == sf::Keyboard::R) {
+				isGameOver = false;
+				cars.clear();
+				dogPosition = sf::Vector2f(640.f, 600.f);
+
+				backgroundMusic.play();
+			}
+
+			if (event.key.code == sf::Keyboard::Escape) {
+				window.close();
+			}
+
 			if (currentState == GameState::Title) {
 				if (event.key.code == sf::Keyboard::Enter) {
 					currentState = GameState::Menu;
@@ -130,6 +246,36 @@ void Game::sUserInput() {
 				}
 			}
 		}
+	}
+
+	if (currentState == GameState::Background && !isGameOver) {
+		sf::Vector2f direction(0.f, 0.f);
+
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
+			direction.y -= 1;
+			dogSprite.setTextureRect(sf::IntRect(0, 96, 32, 32));  // Set upward-facing frame
+		}
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
+			direction.y += 1;
+			dogSprite.setTextureRect(sf::IntRect(0, 0, 32, 32));  // Set downward-facing frame
+		}
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
+			direction.x -= 1;
+			dogSprite.setTextureRect(sf::IntRect(0, 32, 32, 32));  // Set left-facing frame
+		}
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
+			direction.x += 1;
+			dogSprite.setTextureRect(sf::IntRect(0, 64, 32, 32));  // Set right-facing frame
+		}
+
+		if (direction.x != 0 || direction.y != 0) {
+			direction /= std::sqrt(direction.x * direction.x + direction.y * direction.y);
+			dogPosition += direction * dogSpeed * TIME_PER_FRAME.asSeconds();
+		}
+
+		sf::Vector2u windowSize = window.getSize();
+		dogPosition.x = std::max(0.f, std::min(dogPosition.x, windowSize.x - 32.f));  // Keep within X
+		dogPosition.y = std::max(0.f, std::min(dogPosition.y, windowSize.y - 32.f));  // Keep within Y
 	}
 }
 
@@ -162,21 +308,62 @@ void Game::init(const std::string& path) {
 		static_cast<float>(windowSize.x) / menuTexture.getSize().x,
 		static_cast<float>(windowSize.y) / menuTexture.getSize().y
 	);
+
+	if (!dogTexture.loadFromFile(assetsPath + "dog.png")) {
+		std::cerr << "Failed to load dog.png. Check path: " << assetsPath + "dog.png" << "\n";
+		exit(-1);
+	}
+	dogTexture.setSmooth(true);
+	dogSprite.setTexture(dogTexture);
+	dogSprite.setTextureRect(sf::IntRect(0, 0, 32, 32));
+	dogSprite.setPosition(dogPosition);
+	dogSprite.setScale(2.0f, 2.0f);
+
+	if (!carSheetTexture.loadFromFile(assetsPath + "cars.png")) {
+		std::cerr << "Failed to load cars.png\n";
+		exit(-1);
+	}
+
+	int carWidth = 120;
+	int carHeight = 220;
+	int numCars = 3;
+
+	for (int i = 0; i < numCars; i++) {
+		int x = i * carWidth;
+		int y = 0;
+		carFrames.push_back(sf::IntRect(x, y, carWidth, carHeight));
+	}
+
+	if (!backgroundMusic.openFromFile(assetsPath + "backmusic.mp3")) {
+		std::cerr << "Failed to load background music!" << std::endl;
+	}
+	else {
+		backgroundMusic.setLoop(true);
+		backgroundMusic.setVolume(100);
+		backgroundMusic.play();
+	}
+
+	if (!gameOverMusic.openFromFile(assetsPath + "gameover.mp3")) {
+		std::cerr << "Failed to load game over music!" << std::endl;
+	}
+
+	std::cout << "Car textures initialized successfully.\n";
 }
 
 sf::FloatRect Game::getViewBounds() {
-	auto view = window.getView();
+	sf::View view = window.getView();
 	return sf::FloatRect(
-		(view.getCenter().x - view.getSize().x / 2.f), (view.getCenter().y - view.getSize().y / 2.f),
-		view.getSize().x, view.getSize().y);
+		view.getCenter().x - (view.getSize().x / 2.f),
+		view.getCenter().y - (view.getSize().y / 2.f),
+		view.getSize().x,
+		view.getSize().y
+	);
 }
-
 
 void Game::sCollision() {
 
 
 }
-
 
 void Game::keepInBounds(Entity& e)
 {
@@ -196,7 +383,6 @@ void Game::keepInBounds(Entity& e)
 		}
 	}
 }
-
 
 void Game::adjustPlayerPosition() {
 	auto vb = getViewBounds();
