@@ -47,17 +47,37 @@ void Game::run() {
 }
 
 void Game::sMovement(sf::Time dt) {
+	if (isWin) return; // Stop movement if won
 
+	sf::Vector2f prevPos = dogPosition;  // Store previous position
+
+	// Move the player (dog)
 	for (auto& e : entityManager.getEntities()) {
 		auto& tfm = e->getComponent<CTransform>();
 		tfm.pos += tfm.vel * dt.asSeconds();
-
 		keepInBounds(*e);
+	}
+
+	// Compute distance moved (only count forward movement)
+	float movedDistance = dogPosition.y - prevPos.y;
+	if (movedDistance > 0) {
+		dogDistance += movedDistance;
+	}
+
+	// Check win condition
+	if (dogDistance >= WIN_DISTANCE) {
+		isWin = true;
+		backgroundMusic.stop();
+		gameOverMusic.play(); // Play victory sound
 	}
 }
 
+
+
 void Game::sRender() {
-	window.clear(sf::Color(100, 100, 255));
+	window.clear();
+	window.draw(backgroundSprite1);
+	window.draw(backgroundSprite2);
 
 	if (currentState == GameState::Title) {
 		window.draw(titleSprite);
@@ -89,6 +109,27 @@ void Game::sRender() {
 		}
 
 		window.draw(dogSprite);
+		window.draw(progressBarBackground);
+		window.draw(progressBarFill);
+
+		sf::Text distanceText;
+		distanceText.setFont(font);
+		distanceText.setString("Distance: " + std::to_string(static_cast<int>(dogDistance)) + "m / 100m");
+		distanceText.setCharacterSize(25);
+		distanceText.setFillColor(sf::Color::White);
+		distanceText.setPosition(20, 50); // Position near the progress bar
+		window.draw(distanceText);
+
+
+		if (isWin) {
+			sf::Text winText;
+			winText.setFont(font);
+			winText.setString("You Win! 🎉\nPress R to Restart");
+			winText.setCharacterSize(100);
+			winText.setFillColor(sf::Color::Green);
+			winText.setPosition(300, 250);
+			window.draw(winText);
+		}
 
 		if (isGameOver) {
 			sf::Text gameOverText;
@@ -114,6 +155,7 @@ void Game::sUpdate(sf::Time dt) {
 		return;
 
 	sMovement(dt);
+	sScrollBackground(dt);
 	sCollision();
 
 	if (animationClock.getElapsedTime().asSeconds() > 0.1f) {
@@ -143,6 +185,16 @@ void Game::sUpdate(sf::Time dt) {
 
 		cars.push_back(car);
 		carSpawnClock.restart();
+	}
+
+	float progress = dogDistance / WIN_DISTANCE;
+	progress = std::min(progress, 1.0f); // Cap at 100%
+	progressBarFill.setSize(sf::Vector2f(300 * progress, 20)); // Update size
+
+
+	// Check if won
+	if (isWin) {
+		return; // Stop updating game logic if won
 	}
 
 	for (auto& car : cars) {
@@ -217,6 +269,9 @@ void Game::sUserInput() {
 		if (event.type == sf::Event::KeyPressed) {
 			if (isGameOver && event.key.code == sf::Keyboard::R) {
 				isGameOver = false;
+				isWin = false;
+				dogDistance = 0.0f; // Reset distance
+				progressBarFill.setSize(sf::Vector2f(0, 20)); // Reset progress bar
 				cars.clear();
 				dogPosition = sf::Vector2f(640.f, 600.f);
 
@@ -348,6 +403,32 @@ void Game::init(const std::string& path) {
 	}
 
 	std::cout << "Car textures initialized successfully.\n";
+
+	if (!backgroundTexture.loadFromFile(assetsPath + "background.png")) {
+		std::cerr << "Failed to load background.png\n";
+		exit(-1);
+	}
+
+	backgroundSprite1.setTexture(backgroundTexture);
+	backgroundSprite2.setTexture(backgroundTexture);
+
+	backgroundSprite1.setPosition(0, 0);
+	backgroundSprite2.setPosition(0, -static_cast<float>(backgroundTexture.getSize().y));
+
+	progressBarBackground.setSize(sf::Vector2f(300, 20));
+	progressBarBackground.setFillColor(sf::Color(50, 50, 50)); // Dark color
+	progressBarBackground.setPosition(20, 20);
+
+	progressBarFill.setSize(sf::Vector2f(0, 20)); // Start empty
+	progressBarFill.setFillColor(sf::Color(0, 255, 0)); // Green fill
+	progressBarFill.setPosition(20, 20);
+
+	// 🎯 Initialize Distance Text
+	distanceText.setFont(font);
+	distanceText.setCharacterSize(25);
+	distanceText.setFillColor(sf::Color::White);
+	distanceText.setPosition(20, 50);
+
 }
 
 sf::FloatRect Game::getViewBounds() {
@@ -395,6 +476,23 @@ void Game::adjustPlayerPosition() {
 	player_pos.y = std::max(player_pos.y, vb.top + player_cr + 5);
 	player_pos.y = std::min(player_pos.y, (vb.top + vb.height) - player_cr - 5);
 }
+
+void Game::sScrollBackground(sf::Time dt) {
+	float scrollAmount = backgroundScrollSpeed * dt.asSeconds(); // How fast the background moves
+
+	backgroundSprite1.move(0, scrollAmount);
+	backgroundSprite2.move(0, scrollAmount);
+
+	if (backgroundSprite1.getPosition().y >= static_cast<float>(backgroundTexture.getSize().y)) {
+		backgroundSprite1.setPosition(0, backgroundSprite2.getPosition().y - static_cast<float>(backgroundTexture.getSize().y));
+	}
+
+	if (backgroundSprite2.getPosition().y >= static_cast<float>(backgroundTexture.getSize().y)) {
+		backgroundSprite2.setPosition(0, backgroundSprite1.getPosition().y - static_cast<float>(backgroundTexture.getSize().y));
+	}
+}
+
+
 
 void Game::loadConfigFromFile(const std::string& path) {
 	std::ifstream config(path);
@@ -474,5 +572,6 @@ void Game::updateStatistics(sf::Time dt) {
 		statisticsUpdateTime -= sf::seconds(1.0f);
 		statisticsNumFrames = 0;
 	}
+
 
 }

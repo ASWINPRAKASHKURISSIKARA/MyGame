@@ -74,6 +74,24 @@ private:
     sf::Music backgroundMusic;  
     sf::Music gameOverMusic;
 
+    // Background scrolling
+    sf::Texture backgroundTexture;
+    sf::Sprite backgroundSprite1;
+    sf::Sprite backgroundSprite2;
+    float backgroundScrollSpeed = 200.0f; // Pixels per second
+
+    void sScrollBackground(sf::Time dt);
+
+    float dogDistance = 0.0f;   // Distance traveled in meters
+    const float WIN_DISTANCE = 100.0f; // Change from 1000 km to 100m
+    bool isWin = false;
+    sf::Text distanceText;
+
+
+    // Progress Bar UI
+    sf::RectangleShape progressBarBackground;
+    sf::RectangleShape progressBarFill;
+
     // stats
     sf::Text                    statisticsText;
     sf::Time                    statisticsUpdateTime{sf::Time::Zero};
@@ -96,6 +114,7 @@ private:
     void                        loadConfigFromFile(const std::string &path);
     void                        updateStatistics(sf::Time dt);
     sf::FloatRect               getViewBounds();
+
 
 public:
 
