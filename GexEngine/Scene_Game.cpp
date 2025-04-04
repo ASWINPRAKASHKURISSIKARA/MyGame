@@ -5,6 +5,7 @@
 #include "Utilities.h"
 #include "Scene_Menu.h"
 #include "Scene_Title.h"
+#include "GameEngine.h"
 #include <iostream>
 #include <cmath>
 
