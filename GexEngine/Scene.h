@@ -1,18 +1,20 @@
 #pragma once
-#ifndef BREAKOUT_SCENE_H
-#define BREAKOUT_SCENE_H
-
 #include <SFML/Graphics.hpp>
+#include <map>
+#include <string>
+#include "Command.h"  
+
+class GameEngine;
 
 class Scene {
-private:
-    sf::Texture backgroundTexture;
-    sf::Sprite backgroundSprite;
+protected:
+    std::map<sf::Keyboard::Key, std::string> _actionMap;
 
 public:
-    Scene(const std::string& backgroundPath);
+    virtual ~Scene() = default;
+    virtual void update(sf::Time dt) = 0;
+    virtual void sRender() = 0;
+    virtual void doAction(const Command& command) = 0;
 
-    void render(sf::RenderWindow& window);
+    const std::map<sf::Keyboard::Key, std::string>& getActionMap() const { return _actionMap; }
 };
-
-#endif //BREAKOUT_SCENE_H

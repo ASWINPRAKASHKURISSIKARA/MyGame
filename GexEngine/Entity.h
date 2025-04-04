@@ -10,7 +10,6 @@
 #include <string>
 
 #include "Components.h"
-// forward declarations
 class EntityManager;
 
 using ComponentTuple = std::tuple<CShape,  CTransform, CCollision, CInput, CName>;
@@ -18,7 +17,7 @@ using ComponentTuple = std::tuple<CShape,  CTransform, CCollision, CInput, CName
 class Entity {
 private:
     friend class EntityManager;
-    Entity(size_t id, const std::string &tag);      // private ctor, entities can only be created by EntityManager
+    Entity(size_t id, const std::string &tag);      
 
     const size_t            m_id{0};
     const std::string       m_tag{"Default"};
@@ -34,7 +33,6 @@ public:
 
 
 
-    // Component API
     template<typename T>
     inline bool hasComponent() const {
         return getComponent<T>().has;

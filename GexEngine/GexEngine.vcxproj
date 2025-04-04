@@ -206,18 +206,31 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Animation.cpp" />
+    <ClCompile Include="Assets.cpp" />
+    <ClCompile Include="BackgroundScene.cpp" />
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="EntityManager.cpp" />
-    <ClCompile Include="Game.cpp" />
+    <ClCompile Include="GameEngine.cpp" />
     <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="Scene_Game.cpp" />
+    <ClCompile Include="Scene_Menu.cpp" />
+    <ClCompile Include="Scene_Title.cpp" />
     <ClCompile Include="sfml.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Animation.h" />
+    <ClInclude Include="Assets.h" />
+    <ClInclude Include="BackgroundScene.h" />
+    <ClInclude Include="Command.h" />
     <ClInclude Include="Components.h" />
     <ClInclude Include="Entity.h" />
     <ClInclude Include="EntityManager.h" />
-    <ClInclude Include="Game.h" />
+    <ClInclude Include="GameEngine.h" />
     <ClInclude Include="Scene.h" />
+    <ClInclude Include="Scene_Game.h" />
+    <ClInclude Include="Scene_Menu.h" />
+    <ClInclude Include="Scene_Title.h" />
     <ClInclude Include="Utilities.h" />
   </ItemGroup>
   <ItemGroup>

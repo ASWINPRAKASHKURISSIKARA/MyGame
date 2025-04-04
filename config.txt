@@ -1,8 +1,69 @@
-# Game Config
+# Window settings
+Window 1280 768
+WindowTitle "Dog's Journey Home"
+FrameRate 60
 
-Window  1280 768
-Font ../assets/arial.ttf
+# Asset paths
+Font main ../assets/arial.ttf
+Texture background ../assets/background.png
+Texture road ../assets/road.png
+Texture dog ../assets/dog.png
+Texture cars ../assets/cars.png
+Texture bone ../assets/bone.png
+Texture home ../assets/home.png
+Texture gameover ../assets/gameover.png
+Texture winner ../assets/winner.png
+Texture title ../assets/title.png
+Texture menu ../assets/menu.png
+Texture heart ../assets/heart.png
+Sound background ../assets/backmusic.mp3
+Sound gameover ../assets/gameover.mp3
+Sound hit ../assets/dog_hit.wav
 
-#       R    S      F(r,g,b),     O(r,g,b),   OT,  verticies
-Player 30   500    255  0  0    255  0  0     4        5
 
+# Game mechanics
+DogSpeed 50.0
+CarSpeed 200.0
+BackgroundScrollSpeed 500.0
+CarSpawnInterval 1.5
+BoneSpawnInterval 3.0
+WinDistance 1000.0
+RequiredBones 10
+
+
+# Hit animation settings
+HitAnimation.Duration 2.0
+HitAnimation.InvincibilityDuration 2.0
+HitAnimation.DogHealth 3
+HitAnimation.ParticleGravity 200.0
+HitForce 300.0
+HitTimeScale 0.5
+TimeScaleRecoveryRate 0.5
+ScreenShakeIntensity 10.0
+ShakeDecayRate 20.0
+HitRotationSpeed 360.0
+HitSoundVolume 80.0
+ImpactParticleCount 20
+FlashAlpha 180
+FlashFadeRate 5
+ParticleFadeRate 2
+InvincibilityFlashFrequency 8
+
+
+# UI settings
+StatisticsPosition 15 15
+StatisticsSize 15
+DistanceTextPosition 15 40
+DistanceTextSize 20
+ProgressBarPosition 490 20
+ProgressBarSize 300 20
+HeartScale 0.05
+HeartBasePosition 20 20
+HeartSpacing 40
+
+# Player settings
+DogStartPosition 640 384
+DogScale 2.0
+
+# Road settings
+RoadPosition 470 0
