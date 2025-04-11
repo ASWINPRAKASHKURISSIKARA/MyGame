@@ -9,29 +9,44 @@
 #include <iostream>
 #include <cmath>
 
+#include "MusicPlayer.h"
+#include "SoundPlayer.h"
+
 struct CTransform;
 struct CCollision;
 
 Scene_Game::Scene_Game(GameEngine* game)
     : _game(game), _backgroundScene("background.png") {
 
+    initActionMap();
+    initTextures();
+    initUI();
+    initGameParameters();
+    initHealthSystem();
+    initVisualEffects();
+    initSprites();
+    initCarFrames();
+    initHomeAndGameStates();
+    initGameState();
+    initClocks();
+
+    MusicPlayer::getInstance().play("background");
+    MusicPlayer::getInstance().setVolume(100);
+
+    std::cout << "Scene_Game initialized successfully" << std::endl;
+}
+
+void Scene_Game::initActionMap() {
     _actionMap[sf::Keyboard::W] = "MOVE_UP";
     _actionMap[sf::Keyboard::S] = "MOVE_DOWN";
     _actionMap[sf::Keyboard::A] = "MOVE_LEFT";
     _actionMap[sf::Keyboard::D] = "MOVE_RIGHT";
     _actionMap[sf::Keyboard::R] = "RESTART";
     _actionMap[sf::Keyboard::Escape] = "EXIT";
+}
 
+void Scene_Game::initTextures() {
     auto& assets = Assets::getInstance();
-
-    _statisticsText.setFont(assets.getFont("main"));
-    _statisticsText.setPosition(assets.getVector("StatisticsPosition", sf::Vector2f(15.0f, 15.0f)));
-    _statisticsText.setCharacterSize(assets.getInt("StatisticsSize", 15));
-
-    _distanceText.setFont(assets.getFont("main"));
-    _distanceText.setCharacterSize(assets.getInt("DistanceTextSize", 20));
-    _distanceText.setFillColor(sf::Color::White);
-    _distanceText.setPosition(assets.getVector("DistanceTextPosition", sf::Vector2f(15.f, 40.f)));
 
     _backgroundTexture = assets.getTexture("background");
     _roadTexture = assets.getTexture("road");
@@ -41,6 +56,24 @@ Scene_Game::Scene_Game(GameEngine* game)
     _homeTexture = assets.getTexture("home");
     _gameOverTexture = assets.getTexture("gameover");
     _winTexture = assets.getTexture("winner");
+    _cookieTexture = assets.getTexture("cookie");
+    _heartTexture = assets.getTexture("heart");
+}
+
+void Scene_Game::initUI() {
+    auto& assets = Assets::getInstance();
+
+    _statisticsText.setFont(assets.getFont("main"));
+    _statisticsText.setPosition(assets.getVector("StatisticsPosition", sf::Vector2f(15.0f, 15.0f)));
+    _statisticsText.setCharacterSize(assets.getInt("StatisticsSize", 15));
+
+    _distanceText.setFont(assets.getFont("main"));
+    _distanceText.setCharacterSize(assets.getInt("DistanceTextSize", 25));
+    _distanceText.setFillColor(sf::Color::White);
+}
+
+void Scene_Game::initGameParameters() {
+    auto& assets = Assets::getInstance();
 
     _dogSpeed = assets.getFloat("DogSpeed", 25.0f);
     _carSpeed = assets.getFloat("CarSpeed", 100.0f);
@@ -48,16 +81,19 @@ Scene_Game::Scene_Game(GameEngine* game)
     _spawnInterval = assets.getFloat("CarSpawnInterval", 1.5f);
     _boneSpawnInterval = assets.getFloat("BoneSpawnInterval", 3.0f);
     _requiredBones = assets.getInt("RequiredBones", 10);
-    WIN_DISTANCE = assets.getFloat("WinDistance", 1000.0f);
+    _leftBoundary = assets.getFloat("LeftBoundary", 175.0f);
+    _cookieSpawnInterval = assets.getFloat("CookieSpawnInterval", 4.0f);
+    _requiredCookies = assets.getInt("RequiredCookies", 10);
+    WIN_DISTANCE = assets.getFloat("WinDistance", 3000.0f);
 
     _hitAnimationDuration = assets.getFloat("HitAnimation.Duration", 2.0f);
     _invincibilityDuration = assets.getFloat("HitAnimation.InvincibilityDuration", 2.0f);
     _dogHealth = assets.getInt("HitAnimation.DogHealth", 3);
     _particleGravity = assets.getFloat("HitAnimation.ParticleGravity", 200.0f);
+}
 
-    initSounds();
-    initHealthSystem();
-    initVisualEffects();
+void Scene_Game::initSprites() {
+    auto& assets = Assets::getInstance();
 
     _backgroundSprite1.setTexture(_backgroundTexture);
     _backgroundSprite2.setTexture(_backgroundTexture);
@@ -76,7 +112,9 @@ Scene_Game::Scene_Game(GameEngine* game)
     _dogPosition = assets.getVector("DogStartPosition", sf::Vector2f(640.f, 384.f));
     _dogSprite.setPosition(_dogPosition);
     _dogSprite.setScale(assets.getFloat("DogScale", 2.0f), assets.getFloat("DogScale", 2.0f));
+}
 
+void Scene_Game::initCarFrames() {
     int carWidth = 120;
     int carHeight = 220;
     int numCars = 3;
@@ -86,7 +124,9 @@ Scene_Game::Scene_Game(GameEngine* game)
         int y = 0;
         _carFrames.push_back(sf::IntRect(x, y, carWidth, carHeight));
     }
+}
 
+void Scene_Game::initHomeAndGameStates() {
     _homeSprite.setTexture(_homeTexture);
     _homeSprite.setScale(0.2f, 0.2f);
     sf::FloatRect bounds = _homeSprite.getLocalBounds();
@@ -107,35 +147,9 @@ Scene_Game::Scene_Game(GameEngine* game)
         static_cast<float>(_game->windowSize().x) / _winTexture.getSize().x,
         static_cast<float>(_game->windowSize().y) / _winTexture.getSize().y
     );
+}
 
-    sf::Vector2f progressBarPos = assets.getVector("ProgressBarPosition", sf::Vector2f(490.f, 20.f));
-    sf::Vector2f progressBarSize = assets.getVector("ProgressBarSize", sf::Vector2f(300.f, 20.f));
-
-    _progressBarBackground.setSize(progressBarSize);
-    _progressBarBackground.setFillColor(sf::Color(50, 50, 50, 200));
-    _progressBarBackground.setPosition(progressBarPos);
-
-    _progressBarFill.setSize(sf::Vector2f(0, progressBarSize.y));
-    _progressBarFill.setFillColor(sf::Color(0, 255, 0, 200));
-    _progressBarFill.setPosition(progressBarPos);
-
-    if (!_backgroundMusic.openFromFile(assets.getString("Sound.background", "../assets/backmusic.mp3"))) {
-        std::cerr << "Failed to load background music!" << std::endl;
-    }
-    else {
-        _backgroundMusic.setLoop(true);
-        _backgroundMusic.setVolume(100);
-        _backgroundMusic.play();
-    }
-
-    if (!_gameOverMusic.openFromFile(assets.getString("Sound.gameover", "../assets/gameover.mp3"))) {
-        std::cerr << "Failed to load game over music!" << std::endl;
-    }
-
-    _carSpawnClock.restart();
-    _boneSpawnClock.restart();
-    _animationClock.restart();
-
+void Scene_Game::initGameState() {
     _isGameOver = false;
     _isWin = false;
     _canReachHome = false;
@@ -143,14 +157,19 @@ Scene_Game::Scene_Game(GameEngine* game)
     _dogDistance = 0.0f;
     _boneCount = 0;
     _dogAnimationFrame = 0;
-
-    std::cout << "Scene_Game initialized successfully" << std::endl;
+    _cookieCount = 0;
 }
 
+void Scene_Game::initClocks() {
+    _carSpawnClock.restart();
+    _boneSpawnClock.restart();
+    _animationClock.restart();
+    _cookieSpawnClock.restart();
+}
 
 Scene_Game::~Scene_Game() {
-    _backgroundMusic.stop();
-    _gameOverMusic.stop();
+    MusicPlayer::getInstance().stop();
+    MusicPlayer::getInstance().play("gameover");
 }
 
 void Scene_Game::update(sf::Time dt) {
@@ -174,180 +193,25 @@ void Scene_Game::update(sf::Time dt) {
     if (_isGameOver || _isWin) return;
 
     if (_isHitAnimation) {
-        updateHitAnimation(dt); 
-        return; 
+        updateHitAnimation(dt);
+        return;
     }
 
-    sf::Vector2f direction(0.f, 0.f);
-    bool isMoving = false;
-    bool isMovingUp = false;  
-
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
-        direction.y -= 1;
-        _dogSprite.setTextureRect(sf::IntRect(0, 96, 32, 32));  
-        isMoving = true;
-        isMovingUp = true;  
-    }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
-        direction.y += 1;
-        _dogSprite.setTextureRect(sf::IntRect(0, 0, 32, 32));  
-        isMoving = true;
-    }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
-        direction.x -= 1;
-        _dogSprite.setTextureRect(sf::IntRect(0, 32, 32, 32));  
-        isMoving = true;
-    }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
-        direction.x += 1;
-        _dogSprite.setTextureRect(sf::IntRect(0, 64, 32, 32));  
-        isMoving = true;
-    }
-
-    if (isMoving) {
-        if (direction.x != 0 && direction.y != 0) {
-            float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
-            direction /= length;
-        }
-
-        sf::Vector2f oldPosition = _dogPosition;
-
-        _dogPosition += direction * _dogSpeed * scaledDt.asSeconds();  
-
-        sf::Vector2u windowSize = _game->window().getSize();
-        _dogPosition.x = std::max(0.f, std::min(_dogPosition.x, windowSize.x - 32.f));
-        _dogPosition.y = std::max(0.f, std::min(_dogPosition.y, windowSize.y - 32.f));
-
-        _dogSprite.setPosition(_dogPosition);
-
-        float distanceMoved = std::sqrt(
-            std::pow(_dogPosition.x - oldPosition.x, 2) +
-            std::pow(_dogPosition.y - oldPosition.y, 2)
-        );
-
-        if (isMovingUp) {
-            _dogDistance += distanceMoved;
-            sScrollBackground(scaledDt);  
-        }
-
-        if (distanceMoved > 0.1f && _animationClock.getElapsedTime().asSeconds() > 0.1f) {
-            _dogAnimationFrame = (_dogAnimationFrame + 1) % 3;
-            sf::IntRect textureRect = _dogSprite.getTextureRect();
-            int row = textureRect.top / 32; 
-            textureRect.left = _dogAnimationFrame * 32;
-            _dogSprite.setTextureRect(textureRect);
-            _animationClock.restart();
-        }
-    }
-
+    sMovement(scaledDt);
+    sEntityMovement(scaledDt);
+    sObjectMovement(scaledDt);
     sCollision();
-
-    for (auto& bone : _bones) {
-        bone.move(0, 100.f * scaledDt.asSeconds());  
-    }
-
-    _bones.erase(std::remove_if(_bones.begin(), _bones.end(), [&](sf::Sprite& b) {
-        return b.getPosition().y > _game->window().getSize().y;
-        }), _bones.end());
-
-    for (auto it = _bones.begin(); it != _bones.end();) {
-        if (_dogSprite.getGlobalBounds().intersects(it->getGlobalBounds())) {
-            _boneCount++;
-            it = _bones.erase(it);
-        }
-        else {
-            ++it;
-        }
-    }
-
-    if (_boneSpawnClock.getElapsedTime().asSeconds() > _boneSpawnInterval) {
-        sf::Sprite bone;
-        bone.setTexture(_boneTexture);
-        bone.setScale(0.1f, 0.1f);
-        int laneX[] = { 450, 640, 830 };
-        bone.setPosition(static_cast<float>(laneX[rand() % 3]), -100.f);
-        _bones.push_back(bone);
-        _boneSpawnClock.restart();
-    }
-
-    if (_carSpawnClock.getElapsedTime().asSeconds() >= _spawnInterval) {
-        Car car;
-        car.sprite.setTexture(_carSheetTexture);
-        int carIndex = rand() % 3;
-        car.sprite.setTextureRect(_carFrames[carIndex]);
-        int laneX[] = { 450, 640, 830 };
-        int laneIndex = rand() % 3;
-        float startY;
-        if (laneIndex == 2) {
-            startY = static_cast<float>(_game->window().getSize().y + 220); 
-            car.goingDown = false;
-            car.sprite.setScale(0.5f, -0.5f);
-            car.sprite.setOrigin(0, car.sprite.getLocalBounds().height);
-        }
-        else {
-            startY = -220.f; 
-            car.goingDown = true;
-            car.sprite.setScale(0.5f, 0.5f);
-        }
-        car.sprite.setPosition(static_cast<float>(laneX[laneIndex]), startY);
-        _cars.push_back(car);
-        _carSpawnClock.restart();
-    }
-
-    if (_dogDistance >= WIN_DISTANCE && _boneCount >= _requiredBones) {
-        _canReachHome = true;  
-    }
-
-    if (_canReachHome && _dogSprite.getGlobalBounds().intersects(_homeSprite.getGlobalBounds()) && !_isVictoryAnimation) {
-        startVictoryAnimation(); 
-    }
+    sCollectibles();
+    sSpawnObjects(scaledDt);
+    sUpdateProgress();
 
     if (_isVictoryAnimation) {
         updateVictoryAnimation(dt);
     }
 
-    for (auto& car : _cars) {
-        float dy = (car.goingDown ? 1.f : -1.f) * _carSpeed * scaledDt.asSeconds(); 
-        car.sprite.move(0, dy);
-    }
-
-    _cars.erase(std::remove_if(_cars.begin(), _cars.end(), [&](const Car& c) {
-        float y = c.sprite.getPosition().y;
-        return (c.goingDown && y > _game->window().getSize().y) || (!c.goingDown && y < -220.f);
-        }), _cars.end());
-
-    if (_invincibilityTime <= 0.0f) {  
-        for (const auto& car : _cars) {
-            sf::FloatRect dogBounds = _dogSprite.getGlobalBounds();
-            sf::FloatRect carBounds = car.sprite.getGlobalBounds();
-
-            dogBounds.left += 10;
-            dogBounds.width -= 20;
-            dogBounds.top += 5;
-            dogBounds.height -= 10;
-
-            if (dogBounds.intersects(carBounds)) {
-                _dogHealth--;
-
-                if (_dogHealth >= 0 && _dogHealth < _healthIcons.size()) {
-                    _healthIcons[_dogHealth].setColor(sf::Color(100, 100, 100, 128)); 
-                }
-
-                startHitAnimation(car);
-
-                _invincibilityTime = _invincibilityDuration;
-
-                break;
-            }
-        }
-    }
-
-    float progress = _dogDistance / WIN_DISTANCE;
-    progress = std::min(progress, 1.0f);
-    _progressBarFill.setSize(sf::Vector2f(300 * progress, 20));
-
-    updateStatistics(dt); 
+    updateStatistics(dt);
 }
+
 
 
 void Scene_Game::sRender() {
@@ -371,6 +235,9 @@ void Scene_Game::sRender() {
 
     for (const auto& bone : _bones)
         _game->window().draw(bone);
+
+    for (const auto& cookie : _cookies)
+        _game->window().draw(cookie);
 
     _game->window().draw(_dogSprite);
 
@@ -406,11 +273,29 @@ void Scene_Game::sRender() {
         _game->window().draw(_winSprite);
     }
 
-    _distanceText.setString("Distance: " + std::to_string(static_cast<int>(_dogDistance)) + " m\nBones: " + std::to_string(_boneCount));
-    _game->window().draw(_distanceText);
+    if (_isGameOver || _isWin) {
+        sf::Text restartText;
+        restartText.setFont(Assets::getInstance().getFont("main"));
+        restartText.setString("Press R to restart");
+        restartText.setCharacterSize(50);
+        restartText.setStyle(sf::Text::Bold);
+        restartText.setFillColor(sf::Color::White);
 
-    _game->window().draw(_progressBarBackground);
-    _game->window().draw(_progressBarFill);
+        sf::FloatRect textBounds = restartText.getLocalBounds();
+        restartText.setOrigin(textBounds.width / 2.0f, textBounds.height / 2.0f);
+        restartText.setPosition(
+            _game->windowSize().x / 2.0f,
+            _game->windowSize().y - 100.0f
+        );
+
+        _game->window().draw(restartText);
+    }
+
+    _distanceText.setString("Distance: " + std::to_string(static_cast<int>(_dogDistance)) +
+        " m\nBones: " + std::to_string(_boneCount) +
+        "\nCookies: " + std::to_string(_cookieCount));
+
+    _game->window().draw(_distanceText);
 
     if (_screenShake > 0.0f) {
         _game->window().setView(originalView);
@@ -419,7 +304,12 @@ void Scene_Game::sRender() {
 
 
 void Scene_Game::doAction(const Command& command) {
-    if (_isGameOver || _isPaused) return;
+    if (_isPaused) return;
+
+    if (command.getName() == "RESTART" && (_isGameOver || _isWin)) {
+        resetGame();
+        return;
+    }
 
     if (command.getName() == "MOVE_UP") {
         sf::Vector2f oldPosition = _dogPosition;
@@ -427,8 +317,8 @@ void Scene_Game::doAction(const Command& command) {
 
         _dogSprite.setTextureRect(sf::IntRect(0, 96, 32, 32));
 
-        float distanceMoved = std::abs(_dogPosition.y - oldPosition.y);
-        _dogDistance += distanceMoved;
+        float verticalDistanceMoved = std::abs(_dogPosition.y - oldPosition.y);
+        _dogDistance += verticalDistanceMoved;
     }
     else if (command.getName() == "MOVE_DOWN") {
         sf::Vector2f oldPosition = _dogPosition;
@@ -436,26 +326,20 @@ void Scene_Game::doAction(const Command& command) {
 
         _dogSprite.setTextureRect(sf::IntRect(0, 0, 32, 32));
 
-        float distanceMoved = std::abs(_dogPosition.y - oldPosition.y);
-        _dogDistance += distanceMoved;
+        float verticalDistanceMoved = std::abs(_dogPosition.y - oldPosition.y);
+        _dogDistance -= verticalDistanceMoved;
+        _dogDistance = std::max(0.0f, _dogDistance);
     }
     else if (command.getName() == "MOVE_LEFT") {
-        sf::Vector2f oldPosition = _dogPosition;
-        _dogPosition.x -= _dogSpeed * command.getDeltaTime().asSeconds();
-
-        _dogSprite.setTextureRect(sf::IntRect(0, 32, 32, 32));
-
-        float distanceMoved = std::abs(_dogPosition.x - oldPosition.x);
-        _dogDistance += distanceMoved;
+        float newX = _dogPosition.x - _dogSpeed * command.getDeltaTime().asSeconds();
+        if (newX >= _leftBoundary) {
+            _dogPosition.x = newX;
+            _dogSprite.setTextureRect(sf::IntRect(0, 32, 32, 32));
+        }
     }
     else if (command.getName() == "MOVE_RIGHT") {
-        sf::Vector2f oldPosition = _dogPosition;
         _dogPosition.x += _dogSpeed * command.getDeltaTime().asSeconds();
-
         _dogSprite.setTextureRect(sf::IntRect(0, 64, 32, 32));
-
-        float distanceMoved = std::abs(_dogPosition.x - oldPosition.x);
-        _dogDistance += distanceMoved;
     }
     else if (command.getName() == "RESTART" && _isGameOver) {
         resetGame();
@@ -472,9 +356,7 @@ void Scene_Game::doAction(const Command& command) {
 }
 
 
-
-
-void Scene_Game::sMovement(sf::Time dt) {
+void Scene_Game::sEntityMovement(sf::Time dt) {
     if (_isWin) return; 
 
     for (auto& e : _entityManager.getEntities()) {
@@ -542,6 +424,291 @@ void Scene_Game::sCollision() {
     }
 }
 
+void Scene_Game::sMovement(sf::Time dt) {
+    sf::Vector2f direction(0.f, 0.f);
+    bool isMoving = false;
+    bool isMovingUp = false;
+    bool isMovingDown = false;
+
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
+        direction.y -= 1;
+        _dogSprite.setTextureRect(sf::IntRect(0, 96, 32, 32));
+        isMoving = true;
+        isMovingUp = true;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
+        direction.y += 1;
+        _dogSprite.setTextureRect(sf::IntRect(0, 0, 32, 32));
+        isMoving = true;
+        isMovingDown = true;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
+        direction.x -= 1;
+        _dogSprite.setTextureRect(sf::IntRect(0, 32, 32, 32));
+        isMoving = true;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
+        direction.x += 1;
+        _dogSprite.setTextureRect(sf::IntRect(0, 64, 32, 32));
+        isMoving = true;
+    }
+
+    if (isMoving) {
+        if (direction.x != 0 && direction.y != 0) {
+            float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+            direction /= length;
+        }
+
+        sf::Vector2f oldPosition = _dogPosition;
+        sf::Vector2f newPosition = _dogPosition + direction * _dogSpeed * dt.asSeconds();
+
+        // Check left boundary
+        if (newPosition.x < _leftBoundary) {
+            newPosition.x = _leftBoundary;
+        }
+
+        _dogPosition = newPosition;
+
+        sf::Vector2u windowSize = _game->window().getSize();
+        _dogPosition.x = std::max(_leftBoundary, std::min(_dogPosition.x, windowSize.x - 32.f));  // Use _leftBoundary instead of 0.f
+        _dogPosition.y = std::max(0.f, std::min(_dogPosition.y, windowSize.y - 32.f));
+
+        _dogSprite.setPosition(_dogPosition);
+
+
+        float verticalDistanceMoved = std::abs(_dogPosition.y - oldPosition.y);
+
+        if (isMovingUp) {
+            _dogDistance += verticalDistanceMoved;
+            sScrollBackground(dt);
+        }
+        else if (isMovingDown) {
+            _dogDistance -= verticalDistanceMoved;
+            _dogDistance = std::max(0.0f, _dogDistance);
+            sScrollBackground(dt);
+        }
+
+        if (isMoving && _animationClock.getElapsedTime().asSeconds() > 0.1f) {
+            _dogAnimationFrame = (_dogAnimationFrame + 1) % 3;
+            sf::IntRect textureRect = _dogSprite.getTextureRect();
+            int row = textureRect.top / 32;
+            textureRect.left = _dogAnimationFrame * 32;
+            _dogSprite.setTextureRect(textureRect);
+            _animationClock.restart();
+        }
+    }
+}
+
+void Scene_Game::sSpawnObjects(sf::Time dt) {
+    if (_boneSpawnClock.getElapsedTime().asSeconds() > _boneSpawnInterval) {
+        spawnBone();
+        _boneSpawnClock.restart();
+    }
+
+    if (_cookieSpawnClock.getElapsedTime().asSeconds() > _cookieSpawnInterval) {
+        spawnCookie();
+        _cookieSpawnClock.restart();
+    }
+
+    if (_carSpawnClock.getElapsedTime().asSeconds() >= _spawnInterval) {
+        spawnCar();
+        _carSpawnClock.restart();
+    }
+}
+
+void Scene_Game::spawnBone() {
+    sf::Sprite bone;
+    bone.setTexture(_boneTexture);
+    bone.setScale(0.1f, 0.1f);
+
+    bool validPosition = false;
+    int attempts = 0;
+    int laneX[] = { 450, 640, 830 };
+
+    while (!validPosition && attempts < 5) {
+        int lane = rand() % 3;
+        float xPos = static_cast<float>(laneX[lane]);
+        float yPos = -100.f - (rand() % 100); 
+
+        bone.setPosition(xPos, yPos);
+
+        validPosition = true;
+        for (const auto& cookie : _cookies) {
+            if (areSpritesTooClose(bone, cookie)) {
+                validPosition = false;
+                break;
+            }
+        }
+
+        attempts++;
+    }
+
+    if (validPosition) {
+        _bones.push_back(bone);
+    }
+}
+
+void Scene_Game::spawnCookie() {
+    sf::Sprite cookie;
+    cookie.setTexture(_cookieTexture);
+    cookie.setScale(0.1f, 0.1f);
+
+    bool validPosition = false;
+    int attempts = 0;
+    int laneX[] = { 450, 640, 830 };
+
+    while (!validPosition && attempts < 5) {
+        int lane = rand() % 3;
+        float xPos = static_cast<float>(laneX[lane]);
+        float yPos = -100.f - (rand() % 100);
+
+        cookie.setPosition(xPos, yPos);
+
+        validPosition = true;
+        for (const auto& bone : _bones) {
+            if (areSpritesTooClose(cookie, bone)) {
+                validPosition = false;
+                break;
+            }
+        }
+
+        attempts++;
+    }
+
+    if (validPosition) {
+        _cookies.push_back(cookie);
+    }
+}
+
+void Scene_Game::spawnCar() {
+    bool validPosition = false;
+    int attempts = 0;
+    Car newCar;
+
+    while (!validPosition && attempts < 5) {
+        newCar.sprite.setTexture(_carSheetTexture);
+        int carIndex = rand() % 3;
+        newCar.sprite.setTextureRect(_carFrames[carIndex]);
+
+        int laneX[] = { 450, 640, 830 };
+        int laneIndex = rand() % 3;
+
+        float startY;
+        if (laneIndex == 2) {
+            startY = static_cast<float>(_game->window().getSize().y + 220);
+            newCar.goingDown = false;
+            newCar.sprite.setScale(0.5f, -0.5f);
+            newCar.sprite.setOrigin(0, newCar.sprite.getLocalBounds().height);
+        }
+        else {
+            startY = -220.f;
+            newCar.goingDown = true;
+            newCar.sprite.setScale(0.5f, 0.5f);
+        }
+
+        startY += (rand() % 100) - 50;
+        newCar.sprite.setPosition(static_cast<float>(laneX[laneIndex]), startY);
+
+        validPosition = true;
+        for (const auto& car : _cars) {
+            if (areSpritesTooClose(newCar.sprite, car.sprite, 250.0f)) {
+                validPosition = false;
+                break;
+            }
+        }
+
+        attempts++;
+    }
+
+    if (validPosition) {
+        _cars.push_back(newCar);
+    }
+}
+
+void Scene_Game::sObjectMovement(sf::Time dt) {
+    for (auto& car : _cars) {
+        float dy = (car.goingDown ? 1.f : -1.f) * _carSpeed * dt.asSeconds();
+        car.sprite.move(0, dy);
+    }
+
+    _cars.erase(std::remove_if(_cars.begin(), _cars.end(), [&](const Car& c) {
+        float y = c.sprite.getPosition().y;
+        return (c.goingDown && y > _game->window().getSize().y) || (!c.goingDown && y < -220.f);
+        }), _cars.end());
+
+    for (auto& bone : _bones) {
+        bone.move(0, 100.f * dt.asSeconds());
+    }
+
+    _bones.erase(std::remove_if(_bones.begin(), _bones.end(), [&](sf::Sprite& b) {
+        return b.getPosition().y > _game->window().getSize().y;
+        }), _bones.end());
+
+    for (auto& cookie : _cookies) {
+        cookie.move(0, 100.f * dt.asSeconds());
+    }
+
+    _cookies.erase(std::remove_if(_cookies.begin(), _cookies.end(), [&](sf::Sprite& c) {
+        return c.getPosition().y > _game->window().getSize().y;
+        }), _cookies.end());
+}
+
+void Scene_Game::sCollectibles() {
+    for (auto it = _bones.begin(); it != _bones.end();) {
+        if (_dogSprite.getGlobalBounds().intersects(it->getGlobalBounds())) {
+            _boneCount++;
+            SoundPlayer::getInstance().play("collect", it->getPosition());
+            it = _bones.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+
+    for (auto it = _cookies.begin(); it != _cookies.end();) {
+        if (_dogSprite.getGlobalBounds().intersects(it->getGlobalBounds())) {
+            _cookieCount++;
+            SoundPlayer::getInstance().play("collect", it->getPosition());
+            it = _cookies.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+
+    for (auto& car : _cars) {
+        for (auto it = _bones.begin(); it != _bones.end();) {
+            if (car.sprite.getGlobalBounds().intersects(it->getGlobalBounds())) {
+                it = _bones.erase(it);
+            }
+            else {
+                ++it;
+            }
+        }
+
+        for (auto it = _cookies.begin(); it != _cookies.end();) {
+            if (car.sprite.getGlobalBounds().intersects(it->getGlobalBounds())) {
+                it = _cookies.erase(it);
+            }
+            else {
+                ++it;
+            }
+        }
+    }
+}
+
+void Scene_Game::sUpdateProgress() {
+    if (_dogDistance >= WIN_DISTANCE && _boneCount >= _requiredBones && _cookieCount >= _requiredCookies) {
+        _canReachHome = true;
+    }
+
+    if (_canReachHome && _dogSprite.getGlobalBounds().intersects(_homeSprite.getGlobalBounds()) && !_isVictoryAnimation) {
+        startVictoryAnimation();
+        SoundPlayer::getInstance().play("win");
+    }
+}
+
+
 
 void Scene_Game::resetGame() {
     _isGameOver = false;
@@ -551,6 +718,8 @@ void Scene_Game::resetGame() {
     _boneCount = 0;
     _cars.clear();
     _bones.clear();
+    _cookies.clear();
+    _cookieCount = 0;
     _dogPosition = sf::Vector2f(640.f, 600.f);
     _dogSprite.setPosition(_dogPosition);
     _dogSprite.setRotation(0.0f);
@@ -583,7 +752,7 @@ void Scene_Game::resetGame() {
     _impactParticles.clear();
     _particleVelocities.clear();
 
-    _backgroundMusic.play();
+    MusicPlayer::getInstance().play("background");
 }
 
 
@@ -626,16 +795,6 @@ sf::FloatRect Scene_Game::getViewBounds() {
     );
 }
 
-void Scene_Game::initSounds() {
-    if (!_hitSoundBuffer.loadFromFile(Assets::getInstance().getString("Sound.hit", "../assets/dog_hit.wav"))) {
-        std::cerr << "Failed to load dog hit sound\n";
-    }
-    else {
-        _hitSound.setBuffer(_hitSoundBuffer);
-        _hitSound.setVolume(Assets::getInstance().getFloat("HitSoundVolume", 80.0f));
-    }
-}
-
 void Scene_Game::initHealthSystem() {
     _heartTexture = Assets::getInstance().getTexture("heart");
 
@@ -649,7 +808,13 @@ void Scene_Game::initHealthSystem() {
         heart.setPosition(basePos.x + i * spacing, basePos.y);
         _healthIcons.push_back(heart);
     }
+
+    sf::Vector2f heartBasePos = Assets::getInstance().getVector("HeartBasePosition", sf::Vector2f(20.f, 20.f));
+    float heartScale = Assets::getInstance().getFloat("HeartScale", 0.05f);
+    float heartHeight = _heartTexture.getSize().y * heartScale;
+    _distanceText.setPosition(heartBasePos.x, heartBasePos.y + heartHeight + 20.f); // 20px padding
 }
+
 
 void Scene_Game::initVisualEffects() {
     _flashOverlay.setSize(_game->windowSize());
@@ -678,7 +843,7 @@ void Scene_Game::startHitAnimation(const Car& car) {
     float hitForce = Assets::getInstance().getFloat("HitForce", 300.0f);
     _hitVelocity = hitDirection * hitForce;
 
-    _hitSound.play();
+    SoundPlayer::getInstance().play("hit", _dogPosition);
 
     _gameTimeScale = Assets::getInstance().getFloat("HitTimeScale", 0.5f);
 
@@ -763,10 +928,10 @@ void Scene_Game::updateHitAnimation(sf::Time dt) {
         _gameTimeScale = 1.0f; 
         _screenShake = 0.0f; 
 
-        if (_dogHealth <= 0) {
+        if (_dogHealth <= 0 && !_isGameOver) {
             _isGameOver = true;
-            _backgroundMusic.stop();
-            _gameOverMusic.play();
+            MusicPlayer::getInstance().stop();
+            MusicPlayer::getInstance().play("gameover");
         }
     }
 }
@@ -871,7 +1036,6 @@ void Scene_Game::updateVictoryAnimation(sf::Time dt) {
     if (_victoryAnimationTime >= _victoryAnimationDuration) {
         _isVictoryAnimation = false;
         _isWin = true;
-        _backgroundMusic.stop();
-        _gameOverMusic.play();
+        MusicPlayer::getInstance().stop();
     }
 }

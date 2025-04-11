@@ -18,7 +18,6 @@ void Assets::loadFromFile(const std::string& path) {
 
     std::string line;
     while (std::getline(config, line)) {
-        // Skip empty lines and comments
         if (line.empty() || line[0] == '#')
             continue;
 
@@ -148,7 +147,6 @@ const sf::Font& Assets::getFont(const std::string& name) const {
         std::cerr << "Font " << name << " not found!\n";
         static sf::Font defaultFont;
 
-        // Try to load a system font as fallback
 #ifdef _WIN32
         if (defaultFont.loadFromFile("C:/Windows/Fonts/arial.ttf")) {
             return defaultFont;

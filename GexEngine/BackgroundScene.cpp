@@ -22,9 +22,6 @@ BackgroundScene::BackgroundScene(const std::string& backgroundPath) {
 }
 
 void BackgroundScene::sRender() {
-    // This will be called by GameEngine
-    // But we don't have access to the window here
-    // This is just a placeholder
 }
 
 void BackgroundScene::render(sf::RenderWindow& window) {

@@ -1,6 +1,6 @@
 # Window settings
 Window 1280 768
-WindowTitle "Dog's Journey Home"
+WindowTitle "Pawstacle Dash"
 FrameRate 60
 
 # Asset paths
@@ -10,15 +10,19 @@ Texture road ../assets/road.png
 Texture dog ../assets/dog.png
 Texture cars ../assets/cars.png
 Texture bone ../assets/bone.png
+Texture cookie ../assets/Cookie.png
 Texture home ../assets/home.png
 Texture gameover ../assets/gameover.png
 Texture winner ../assets/winner.png
 Texture title ../assets/title.png
-Texture menu ../assets/menu.png
+Texture menu ../assets/menu1.png
 Texture heart ../assets/heart.png
 Sound background ../assets/backmusic.mp3
 Sound gameover ../assets/gameover.mp3
-Sound hit ../assets/dog_hit.wav
+Sound hit ../assets/hit.mp3
+Sound collect ../assets/collect.mp3
+Sound win ../assets/win.mp3
+
 
 
 # Game mechanics
@@ -27,9 +31,11 @@ CarSpeed 200.0
 BackgroundScrollSpeed 500.0
 CarSpawnInterval 1.5
 BoneSpawnInterval 3.0
-WinDistance 1000.0
+WinDistance 3000.0
 RequiredBones 10
-
+CookieSpawnInterval 4.0
+RequiredCookies 10
+LeftBoundary 175.0  
 
 # Hit animation settings
 HitAnimation.Duration 2.0
@@ -53,8 +59,8 @@ InvincibilityFlashFrequency 8
 # UI settings
 StatisticsPosition 15 15
 StatisticsSize 15
-DistanceTextPosition 15 40
-DistanceTextSize 20
+DistanceTextPosition 20 70
+DistanceTextSize 25
 ProgressBarPosition 490 20
 ProgressBarSize 300 20
 HeartScale 0.05

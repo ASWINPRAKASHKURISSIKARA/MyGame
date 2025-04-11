@@ -1,7 +1,3 @@
-//
-// Created by David Burchill on 2023-09-28.
-//
-
 #include "EntityManager.h"
 #include "Entity.h"
 

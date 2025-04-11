@@ -7,6 +7,7 @@ private:
     GameEngine* _game;
     sf::Texture _titleTexture;
     sf::Sprite _titleSprite;
+    sf::Clock _animationClock;
 
 public:
     Scene_Title(GameEngine* game);

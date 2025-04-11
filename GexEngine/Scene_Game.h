@@ -40,11 +40,20 @@ private:
     sf::Texture _winTexture;
     sf::Sprite _winSprite;
 
+    float _leftBoundary;
+
+    // Cookie-related variables
+    sf::Texture _cookieTexture;
+    std::vector<sf::Sprite> _cookies;
+    int _cookieCount = 0;
+    sf::Clock _cookieSpawnClock;
+    float _cookieSpawnInterval;
+    int _requiredCookies;
+
+
     // UI elements
     sf::Text _statisticsText;
     sf::Text _distanceText;
-    sf::RectangleShape _progressBarBackground;
-    sf::RectangleShape _progressBarFill;
 
     // Game parameters
     float _dogSpeed;
@@ -71,10 +80,6 @@ private:
     sf::Time _statisticsUpdateTime;
     unsigned int _statisticsNumFrames;
 
-    // Music
-    sf::Music _backgroundMusic;
-    sf::Music _gameOverMusic;
-
     // Hit animation
     bool _isHitAnimation = false;
     float _hitAnimationTime = 0.0f;
@@ -83,13 +88,12 @@ private:
     float _hitRotation = 0.0f;
     float _gameTimeScale = 1.0f;
     float _screenShake = 0.0f;
-    sf::Sound _hitSound;
-    sf::SoundBuffer _hitSoundBuffer;
+
 
     // Victory animation
     bool _isVictoryAnimation = false;
     float _victoryAnimationTime = 0.0f;
-    float _victoryAnimationDuration = 3.0f; // 3 seconds of celebration before win screen
+    float _victoryAnimationDuration = 3.0f; 
     std::vector<sf::CircleShape> _confettiParticles;
     std::vector<sf::Vector2f> _confettiVelocities;
     std::vector<sf::Color> _confettiColors;
@@ -112,9 +116,26 @@ private:
 
     // Systems
     void sMovement(sf::Time dt);
+    void sEntityMovement(sf::Time dt);
     void sScrollBackground(sf::Time dt);
     void sCollision();
     void sUserInput(const sf::Event& event);
+    void sSpawnObjects(sf::Time dt);
+    void spawnBone();
+    void spawnCookie();
+    void spawnCar();
+    void sObjectMovement(sf::Time dt);
+    void sCollectibles();
+    void sUpdateProgress();
+    void initActionMap();
+    void initTextures();
+    void initUI();
+    void initGameParameters();
+    void initSprites();
+    void initCarFrames();
+    void initHomeAndGameStates();
+    void initGameState();
+    void initClocks();
 
     // Helper methods
     void resetGame();
@@ -122,6 +143,14 @@ private:
     void keepInBounds(Entity& e);
     sf::FloatRect getViewBounds();
     void adjustPlayerPosition();
+
+    bool areSpritesTooClose(const sf::Sprite& sprite1, const sf::Sprite& sprite2, float minDistance = 50.0f) {
+        sf::Vector2f pos1 = sprite1.getPosition();
+        sf::Vector2f pos2 = sprite2.getPosition();
+        float distance = std::sqrt(std::pow(pos1.x - pos2.x, 2) + std::pow(pos1.y - pos2.y, 2));
+        return distance < minDistance;
+    }
+
 
     // Methods for hit animation
     void initSounds();

@@ -1,7 +1,3 @@
-//
-// Created by David Burchill on 2023-09-27.
-//
-
 #ifndef BREAKOUT_COMPONENTS_H
 #define BREAKOUT_COMPONENTS_H
 
@@ -90,6 +86,46 @@ struct CInput : public Component
 
     CInput() = default;
 };
+
+// Add these to your Components.h file
+
+struct CDog : public Component {
+    int health = 3;
+    float distance = 0.0f;
+    int boneCount = 0;
+    int cookieCount = 0;
+    int animationFrame = 0;
+    bool isInvincible = false;
+    float invincibilityTime = 0.0f;
+
+    CDog() { has = true; }
+};
+
+struct CCar : public Component {
+    bool goingDown = true;
+
+    CCar() { has = true; }
+    CCar(bool down) : goingDown(down) { has = true; }
+};
+
+struct CCollectible : public Component {
+    enum Type { Bone, Cookie };
+    Type type;
+
+    CCollectible() { has = true; }
+    CCollectible(Type t) : type(t) { has = true; }
+};
+
+struct CSprite : public Component {
+    sf::Sprite sprite;
+
+    CSprite() { has = true; }
+    CSprite(const sf::Texture& texture) {
+        sprite.setTexture(texture);
+        has = true;
+    }
+};
+
 
 
 #endif //BREAKOUT_COMPONENTS_H

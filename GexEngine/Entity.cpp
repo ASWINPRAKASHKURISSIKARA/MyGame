@@ -1,7 +1,3 @@
-//
-// Created by David Burchill on 2023-09-27.
-//
-
 #include "Entity.h"
 
 Entity::Entity(size_t id, const std::string &tag)
